@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Research Generator 🎓</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; display: flex; min-height: 100vh; }
+        
+        /* Sidebar Layout styling matching exact theme components */
+        .sidebar { width: 300px; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); color: #f8fafc; padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; position: fixed; height: 100vh; overflow-y: auto; }
+        .sidebar-title { font-size: 1.25rem; font-weight: 700; border-bottom: 1px solid #334155; padding-bottom: 1rem; }
+        .nav-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .nav-btn { background: none; border: none; color: #94a3b8; text-align: left; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; width: 100%; transition: all 0.2s; }
+        .nav-btn:hover, .nav-btn.active { background: #1e40af; color: white; }
+        .progress-container { margin-top: auto; border-top: 1px solid #334155; padding-top: 1rem; font-size: 0.75rem; color: #94a3b8; }
+        .progress-bar-bg { background: #334155; border-radius: 20px; height: 8px; margin-top: 0.5rem; width: 100%; overflow: hidden; }
+        .progress-bar-fill { background: #1e40af; height: 100%; width: 0%; transition: width 0.3s; }
+
+        /* Main Workspace Section Details */
+        .main-content { margin-left: 300px; padding: 2rem 2.5rem; max-width: 1200px; width: calc(100% - 300px); }
+        .page-pane { display: none; }
+        .page-pane.active { display: block; }
+        
+        .section-header { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; }
+        .section-sub { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+        
+        .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+        label { font-size: 0.875rem; font-weight: 600; color: #334155; }
+        input, select, textarea { border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.875rem; font-family: inherit; width: 100%; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: #1e40af; }
+        
+        button.btn-primary { background: #1e40af; color: white; border: none; border-radius: 8px; padding: 0.6rem 1.2rem; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: background 0.2s; width: max-content; }
+        button.btn-primary:hover { background: #1d4ed8; }
+        
+        .badge-complete { background: #dcfce7; color: #15803d; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .badge-missing { background: #fef9c3; color: #854d0e; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        
+        .info-box { background: #eff6ff; border-left: 4px solid #1e40af; color: #1e40af; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; }
+        .alert-success { background: #dcfce7; border-left: 4px solid #15803d; color: #15803d; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; }
+        
+        .tab-nav { display: flex; gap: 0.5rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem; overflow-x: auto; }
+        .tab-btn { background: none; border: none; padding: 0.6rem 1rem; font-size: 0.875rem; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: #1e40af; border-bottom-color: #1e40af; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        
+        pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; overflow-x: auto; max-height: 400px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.75rem; text-align: left; font-size: 0.875rem; }
+        th { background: #f8fafc; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-title">🎓 AI Research Generator</div>
+        <div class="nav-group">
+            <button class="nav-btn active" onclick="switchPage('project-setup')">📋 Project Setup</button>
+            <button class="nav-btn" onclick="switchPage('authors')">👥 Authors</button>
+            <button class="nav-btn" onclick="switchPage('references')">📚 References</button>
+            <button class="nav-btn" onclick="switchPage('planner')">🗺️ Research Planner</button>
+            <button class="nav-btn" onclick="switchPage('sections-gen')">✍️ Section Generator</button>
+            <button class="nav-btn" onclick="switchPage('figures-charts')">📊 Figures & Charts</button>
+            <button class="nav-btn" onclick="switchPage('integrity')">🔍 Integrity Check</button>
+            <button class="nav-btn" onclick="switchPage('export-pane')">📦 Export</button>
+        </div>
+        <div class="progress-container">
+            <div id="progress-text">Overall progress: 0%</div>
+            <div class="progress-bar-bg"><div id="progress-fill" class="progress-bar-fill"></div></div>
+            <div style="margin-top: 1rem; font-size: 0.7rem; opacity: 0.7;">Built for first-year researchers 📘<br>Powered by Gemini 2.5 Flash Lite</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div id="project-setup" class="page-pane active">
+            <div class="section-header">📋 Project Setup</div>
+            <div class="section-sub">Define your research paper's core details.</div>
+            <div class="card">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Research Title</label>
+                        <input type="text" id="p-title" placeholder="e.g., Machine Learning in Healthcare" onchange="updateProjectState()">
+                    </div>
+                    <div class="form-group">
+                        <label>Research Domain</label>
+                        <input type="text" id="p-domain" placeholder="e.g., Computer Science, Biology" onchange="updateProjectState()">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Research Type</label>
+                        <select id="p-type" onchange="updateProjectState()">
+                            <option>Review Paper</option><option>Survey Paper</option><option>Case Study</option><option>Experimental Research</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Citation Style</label>
+                        <select id="p-citation" onchange="updateProjectState()">
+                            <option>APA</option><option>MLA</option><option>IEEE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Journal Template</label>
+                        <select id="p-template" onchange="updateProjectState()">
+                            <option>Generic Academic</option><option>IEEE</option><option>ACM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Number of Pages</label>
+                        <input type="number" id="p-pages" min="4" max="50" value="8" onchange="updateProjectState()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Keywords (comma-separated)</label>
+                    <input type="text" id="p-keywords" placeholder="machine learning, neural networks, healthcare" onchange="updateProjectState()">
+                </div>
+                <div id="setup-success" class="alert-success" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div id="authors" class="page-pane">
+            <div class="section-header">👥 Authors</div>
+            <div class="section-sub">Add all authors contributing to this paper.</div>
+            <div class="card">
+                <h3>➕ Add New Author</h3><br>
+                <div class="grid-2">
+                    <div class="form-group"><label>Full Name</label><input type="text" id="auth-name"></div>
+                    <div class="form-group"><label>Institution / University</label><input type="text" id="auth-affil"></div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Department</label><input type="text" id="auth-dept"></div>
+                    <div class="form-group"><label>Email Address</label><input type="text" id="auth-email"></div>
+                </div>
+                <button class="btn-primary" onclick="addAuthor()">Add Author</button>
+            </div>
+            <div class="card">
+                <h3>Current Authors</h3>
+                <table id="authors-table">
+                    <thead><tr><th>Name</th><th>Affiliation</th><th>Department</th><th>Email</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="references" class="page-pane">
+            <div class="section-header">📚 References</div>
+            <div class="section-sub">Upload PDF papers to build your reference library.</div>
+            <div class="card">
+                <div class="form-group">
+                    <label>Upload PDF references</label>
+                    <input type="file" id="ref-file" accept=".pdf" onchange="uploadReference()">
+                </div>
+                <div id="ref-loading" style="display:none;" class="info-box">Extracting metadata from PDF...</div>
+            </div>
+            <div class="card">
+                <h3>Reference Library</h3>
+                <div id="reference-list" style="margin-top:1rem;"></div>
+            </div>
+            <div class="card">
+                <h3>📋 Generated BibTeX</h3><br>
+                <pre id="bibtex-preview">% No references added</pre>
+            </div>
+        </div>
+
+        <div id="planner" class="page-pane">
+            <div class="section-header">🗺️ Research Planner</div>
+            <div class="section-sub">Use AI to generate your research structure and objectives.</div>
+            <div class="card">
+                <div class="info-box">
+                    <strong>What the AI will generate:</strong><br>
+                    - Clear research objective<br>- 3–5 focused research questions<br>- Refined keyword list<br>- Suggested paper structure
+                </div>
+                <button class="btn-primary" onclick="generatePlan()">🚀 Generate Research Plan</button>
+                <div id="plan-loading" style="display:none;" class="info-box">Generating plan from Gemini backend models...</div>
+            </div>
+            <div class="grid-2" id="planner-results" style="display:none;">
+                <div class="card">
+                    <h4>Research Objective</h4><p id="plan-obj" class="info-box" style="margin-top:0.5rem;"></p>
+                    <h4>Research Questions</h4><ul id="plan-rq" style="margin-left:1.5rem; margin-top:0.5rem;"></ul>
+                </div>
+                <div class="card">
+                    <h4>Keywords</h4><p id="plan-keys" style="margin:0.5rem 0; font-style:italic;"></p>
+                    <h4>Suggested Structure</h4><div id="plan-struct" style="margin-top:0.5rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sections-gen" class="page-pane">
+            <div class="section-header">✍️ Section Generator</div>
+            <div class="section-sub">Generate each section individually with focused AI prompts.</div>
+            <div class="tab-nav" id="section-tabs">
+                <button class="tab-btn active" onclick="switchSectionTab('abstract')">Abstract</button>
+                <button class="tab-btn" onclick="switchSectionTab('introduction')">Introduction</button>
+                <button class="tab-btn" onclick="switchSectionTab('literature_review')">Literature Review</button>
+                <button class="tab-btn" onclick="switchSectionTab('methodology')">Methodology</button>
+                <button class="tab-btn" onclick="switchSectionTab('results')">Results Template</button>
+                <button class="tab-btn" onclick="switchSectionTab('discussion')">Discussion</button>
+                <button class="tab-btn" onclick="switchSectionTab('conclusion')">Conclusion</button>
+            </div>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <button class="btn-primary" onclick="generateCurrentSection()">Generate Current Section</button>
+                    <span id="section-status" class="badge-missing">⏳ Not yet generated</span>
+                </div>
+                <div id="section-loading" style="display:none;" class="info-box">Gemini is processing generation request parameters...</div>
+                <textarea id="section-editor" rows="15" placeholder="Click 'Generate' to create content or type manually..." onchange="saveCurrentSectionText()"></textarea>
+            </div>
+        </div>
+
+        <div id="figures-charts" class="page-pane">
+            <div class="section-header">📊 Figures & Charts</div>
+            <div class="section-sub">Upload figures and generate charts from your data.</div>
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchAssetTab(this, 'asset-upload')">📷 Upload Figures</button>
+                <button class="tab-btn" onclick="switchAssetTab(this, 'asset-chart')">📈 Generate Charts from CSV</button>
+            </div>
+            <div id="asset-upload" class="tab-pane active class-card-wrapper">
+                <div class="card">
+                    <label>Upload figures (PNG, JPG, JPEG)</label><br><br>
+                    <input type="file" id="fig-file" accept="image/*" onchange="uploadFigure()">
+                    <div id="fig-gallery" style="margin-top:1rem; display:flex; gap:1rem; flex-wrap:wrap;"></div>
+                </div>
+            </div>
+            <div id="asset-chart" class="tab-pane">
+                <div class="card">
+                    <div class="form-group"><label>Upload CSV data file</label><input type="file" id="csv-file" accept=".csv"></div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Chart Type</label>
+                            <select id="c-type"><option>Bar Chart</option><option>Line Chart</option><option>Pie Chart</option></select>
+                        </div>
+                        <div class="form-group"><label>X-axis Column Name</label><input type="text" id="c-x" placeholder="e.g. Year"></div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group"><label>Y-axis Column Name</label><input type="text" id="c-y" placeholder="e.g. Value"></div>
+                        <div class="form-group"><label>Chart Title</label><input type="text" id="c-title" value="Research Data Chart"></div>
+                    </div>
+                    <button class="btn-primary" onclick="generateChart()">Generate Chart</button>
+                    <div id="chart-msg" style="margin-top:1rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="integrity" class="page-pane">
+            <div class="section-header">🔍 Research Integrity Check</div>
+            <div class="section-sub">Review your paper's completeness before exporting.</div>
+            <div class="card grid-2" style="grid-template-columns: repeat(3, 1fr); text-align:center;">
+                <div><label>Completed Items</label><h2 id="int-completed-count">0/9</h2></div>
+                <div><label>Completion Percentage</label><h2 id="int-pct">0%</h2></div>
+                <div><label>Status Rating</label><h2 id="int-status">Needs Work</h2></div>
+            </div>
+            <div class="card">
+                <h3>Checklist Dashboard</h3><br>
+                <div id="checklist-items" style="display:flex; flex-direction:column; gap:1rem;"></div>
+            </div>
+        </div>
+
+        <div id="export-pane" class="page-pane">
+            <div class="section-header">📦 Export Project</div>
+            <div class="section-sub">Download your complete LaTeX project for Overleaf.</div>
+            <div class="grid-2">
+                <div class="card">
+                    <strong>What's included in the ZIP:</strong><br><br>
+                    - main.tex — Full LaTeX document<br>- references.bib — BibTeX references<br>- images/ — Uploaded figures<br>- charts/ — Generated charts
+                </div>
+                <div class="card">
+                    <strong>How to use with Overleaf:</strong><br><br>
+                    1. Download the ZIP file<br>2. Go to overleaf.com<br>3. New Project → Upload Project<br>4. Provide download package artifact
+                </div>
+            </div>
+            <div class="card">
+                <button class="btn-primary" onclick="window.open('/export/zip', '_blank')">📦 Generate & Download ZIP</button>
+            </div>
+            <div class="card">
+                <h3>Preview LaTeX Source Code (main.tex)</h3><br>
+                <button class="btn-primary" style="margin-bottom:1rem;" onclick="loadLatexPreview()">Refresh Preview</button>
+                <pre id="latex-code-view">Click refresh button to build preview rendering string...</pre>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentState = {};
+        let activeSectionTab = 'abstract';
+
+        async function fetchState() {
+            const r = await fetch('/api/state');
+            currentState = await r.json();
+            updateUIElements();
+        }
+
+        function updateUIElements() {
+            // Setup Fields
+            document.getElementById('p-title').value = currentState.project.title || '';
+            document.getElementById('p-domain').value = currentState.project.domain || '';
+            document.getElementById('p-type').value = currentState.project.research_type || 'Review Paper';
+            document.getElementById('p-citation').value = currentState.project.citation_style || 'IEEE';
+            document.getElementById('p-template').value = currentState.project.journal_template || 'Generic Academic';
+            document.getElementById('p-pages').value = currentState.project.num_pages || 8;
+            document.getElementById('p-keywords').value = currentState.project.keywords || '';
+
+            if(currentState.project.title) {
+                const sBox = document.getElementById('setup-success');
+                sBox.style.display = 'block';
+                sBox.innerText = `✅ Project '${currentState.project.title}' configured successfully.`;
+            }
+
+            // Progress Bar Tracking Calculations 
+            const checks = currentState.integrity_checks || {};
+            const completed = Object.values(checks).filter(Boolean).length;
+            const total = Object.keys(checks).length || 9;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            document.getElementById('progress-text').innerText = `Overall progress: ${pct}%`;
+            document.getElementById('progress-fill').style.width = `${pct}%`;
+
+            // Render Authors list view table matrix
+            const tbody = document.querySelector('#authors-table tbody');
+            tbody.innerHTML = '';
+            currentState.authors.forEach((a, i) => {
+                tbody.innerHTML += `<tr><td>${a.name}</td><td>${a.affiliation}</td><td>${a.department}</td><td>${a.email}</td><td><button onclick="removeAuthor(${i})">Remove</button></td></tr>`;
+            });
+
+            // Reference Library listing logic
+            const refList = document.getElementById('reference-list');
+            refList.innerHTML = '';
+            currentState.references.forEach((r, i) => {
+                refList.innerHTML += `<div class="card"><strong>[${i+1}] ${r.title}</strong><br><small>Authors: ${r.authors} | File: ${r.filename}</small></div>`;
+            });
+            document.getElementById('bibtex-preview').innerText = currentState.bibtex || '% No references added';
+
+            // Research Planner tracking structure
+            if (currentState.planner && (currentState.planner.objective || currentState.planner.raw)) {
+                document.getElementById('planner-results').style.display = 'grid';
+                if(currentState.planner.raw) {
+                    document.getElementById('plan-obj').innerText = currentState.planner.raw;
+                } else {
+                    document.getElementById('plan-obj').innerText = currentState.planner.objective || '';
+                    const rqList = document.getElementById('plan-rq');
+                    rqList.innerHTML = '';
+                    (currentState.planner.research_questions || []).forEach(q => rqList.innerHTML += `<li>${q}</li>`);
+                    document.getElementById('plan-keys').innerText = (currentState.planner.keywords || []).join(' · ');
+                    
+                    const structDiv = document.getElementById('plan-struct');
+                    structDiv.innerHTML = '';
+                    (currentState.planner.structure || []).forEach(s => {
+                        if(typeof s === 'object') {
+                            for(let k in s) { structDiv.innerHTML += `<div><strong>${k}:</strong> ${s[k]}</div>`; }
+                        } else { structDiv.innerHTML += `<div>• ${s}</div>`; }
+                    });
+                }
+            }
+
+            // Sync text section editing panes dynamically
+            document.getElementById('section-editor').value = currentState.sections[activeSectionTab] || '';
+            const statusIndicator = document.getElementById('section-status');
+            if(currentState.sections[activeSectionTab] && currentState.sections[activeSectionTab].trim()) {
+                statusIndicator.className = 'badge-complete';
+                statusIndicator.innerText = '✅ Generated';
+            } else {
+                statusIndicator.className = 'badge-missing';
+                statusIndicator.innerText = '⏳ Not yet generated';
+            }
+
+            // Figures and Images configuration module rendering updates
+            const gallery = document.getElementById('fig-gallery');
+            gallery.innerHTML = '';
+            currentState.figures.forEach(f => {
+                gallery.innerHTML += `<div style="border:1px solid #ccc; padding:0.5rem; border-radius:4px;">📷 ${f.name}</div>`;
+            });
+
+            // Integrity evaluation text nodes updates matching UI layouts exactly
+            document.getElementById('int-completed-count').innerText = `${completed}/${total}`;
+            document.getElementById('int-pct').innerText = `${pct}%`;
+            document.getElementById('int-status').innerText = pct === 100 ? "🟢 Ready to Export" : (pct >= 60 ? "🟡 Almost Ready" : "🔴 Needs Work");
+
+            const checkListDiv = document.getElementById('checklist-items');
+            checkListDiv.innerHTML = '';
+            for(let key in checks) {
+                const isDone = checks[key];
+                checkListDiv.innerHTML += `<div>
+                    ${isDone ? '<span class="badge-complete">Complete</span>' : '<span class="badge-missing">Missing</span>'}
+                    <strong style="margin-left:1rem;">${key}</strong>
+                </div>`;
+            }
+        }
+
+        async function updateProjectState() {
+            const project = {
+                title: document.getElementById('p-title').value,
+                domain: document.getElementById('p-domain').value,
+                research_type: document.getElementById('p-type').value,
+                citation_style: document.getElementById('p-citation').value,
+                journal_template: document.getElementById('p-template').value,
+                num_pages: parseInt(document.getElementById('p-pages').value) || 8,
+                keywords: document.getElementById('p-keywords').value
+            };
+            await fetch('/api/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project })
+            });
+            fetchState();
+        }
+
+        async function addAuthor() {
+            const author = {
+                name: document.getElementById('auth-name').value,
+                affiliation: document.getElementById('auth-affil').value,
+                department: document.getElementById('auth-dept').value,
+                email: document.getElementById('auth-email').value
+            };
+            await fetch('/api/authors/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(author)
+            });
+            document.getElementById('auth-name').value = '';
+            document.getElementById('auth-affil').value = '';
+            document.getElementById('auth-dept').value = '';
+            document.getElementById('auth-email').value = '';
+            fetchState();
+        }
+
+        async function removeAuthor(index) {
+            await fetch('/api/authors/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index })
+            });
+            fetchState();
+        }
+
+        async function uploadReference() {
+            const fileInput = document.getElementById('ref-file');
+            if(!fileInput.files.length) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            document.getElementById('ref-loading').style.display = 'block';
+            await fetch('/api/references/upload', { method: 'POST', body: formData });
+            document.getElementById('ref-loading').style.display = 'none';
+            fileInput.value = '';
+            fetchState();
+        }
+
+        async function generatePlan() {
+            document.getElementById('plan-loading').style.display = 'block';
+            await fetch('/api/planner/generate', { method: 'POST' });
+            document.getElementById('plan-loading').style.display = 'none';
+            fetchState();
+        }
+
+        function switchSectionTab(key) {
+            activeSectionTab = key;
+            document.querySelectorAll('#section-tabs .tab-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText.toLowerCase().includes(key.replace('_',' ').substring(0,5)));
+            });
+            document.getElementById('section-editor').value = currentState.sections[activeSectionTab] || '';
+            const statusIndicator = document.getElementById('section-status');
+            if(currentState.sections[activeSectionTab] && currentState.sections[activeSectionTab].trim()) {
+                statusIndicator.className = 'badge-complete';
+                statusIndicator.innerText = '✅ Generated';
+            } else {
+                statusIndicator.className = 'badge-missing';
+                statusIndicator.innerText = '⏳ Not yet generated';
+            }
+        }
+
+        async function generateCurrentSection() {
+            document.getElementById('section-loading').style.display = 'block';
+            const r = await fetch('/api/sections/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: activeSectionTab })
+            });
+            document.getElementById('section-loading').style.display = 'none';
+            fetchState();
+        }
+
+        async function saveCurrentSectionText() {
+            const txt = document.getElementById('section-editor').value;
+            currentState.sections[activeSectionTab] = txt;
+            await fetch('/api/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sections: currentState.sections })
+            });
+            updateUIElements();
+        }
+
+        async function uploadFigure() {
+            const fileInput = document.getElementById('fig-file');
+            if(!fileInput.files.length) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            await fetch('/api/figures/upload', { method: 'POST', body: formData });
+            fileInput.value = '';
+            fetchState();
+        }
+
+        async function generateChart() {
+            const csvInput = document.getElementById('csv-file');
+            if(!csvInput.files.length) return alert('Please upload a CSV data file.');
+            
+            const formData = new FormData();
+            formData.append('file', csvInput.files[0]);
+            formData.append('chart_type', document.getElementById('c-type').value);
+            formData.append('x_col', document.getElementById('c-x').value);
+            formData.append('y_col', document.getElementById('c-y').value);
+            formData.append('chart_title', document.getElementById('c-title').value);
+            
+            const msg = document.getElementById('chart-msg');
+            msg.className = 'info-box';
+            msg.innerText = 'Compiling rendering canvas pipeline configurations...';
+            
+            const r = await fetch('/api/charts/csv', { method: 'POST', body: formData });
+            const res = await r.json();
+            if(res.status === 'success') {
+                msg.className = 'alert-success';
+                msg.innerText = `Chart '${res.chart_name}' generated and saved in memory collection asset catalog list.`;
+            } else {
+                msg.className = 'badge-missing';
+                msg.innerText = `Error: ${res.message}`;
+            }
+            fetchState();
+        }
+
+        async function loadLatexPreview() {
+            const r = await fetch('/export/latex');
+            const txt = await r.text();
+            document.getElementById('latex-code-view').innerText = txt;
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function switchAssetTab(btn, paneId) {
+            document.querySelectorAll('#figures-charts .tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('#figures-charts .tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(paneId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Initialize connection string on window loading state cycles
+        window.onload = fetchState;
+    </script>
+</body>
+</html>
